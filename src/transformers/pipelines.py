@@ -649,6 +649,9 @@ class NerPipeline(Pipeline):
         return answers
 
 
+TokenClassificationPipeline = NerPipeline
+
+
 class QuestionAnsweringArgumentHandler(ArgumentHandler):
     """
     QuestionAnsweringPipeline requires the user to provide multiple arguments (i.e. question & context) to be mapped
@@ -979,7 +982,7 @@ SUPPORTED_TASKS = {
         "default": {
             "model": {"pt": "distilbert-base-cased-distilled-squad", "tf": "distilbert-base-cased-distilled-squad"},
             "config": None,
-            "tokenizer": "distilbert-base-cased",
+            "tokenizer": ("distilbert-base-cased", {"use_fast": False}),
         },
     },
     "fill-mask": {
@@ -989,7 +992,7 @@ SUPPORTED_TASKS = {
         "default": {
             "model": {"pt": "distilroberta-base", "tf": "distilroberta-base"},
             "config": None,
-            "tokenizer": "distilroberta-base",
+            "tokenizer": ("distilroberta-base", {"use_fast": False}),
         },
     },
 }
@@ -1054,8 +1057,12 @@ def pipeline(
             modelcard = config
 
     # Instantiate tokenizer if needed
-    if isinstance(tokenizer, str):
-        tokenizer = AutoTokenizer.from_pretrained(tokenizer)
+    if isinstance(tokenizer, (str, tuple)):
+        if isinstance(tokenizer, tuple):
+            # For tuple we have (tokenizer name, {kwargs})
+            tokenizer = AutoTokenizer.from_pretrained(tokenizer[0], **tokenizer[1])
+        else:
+            tokenizer = AutoTokenizer.from_pretrained(tokenizer)
 
     # Instantiate config if needed
     if isinstance(config, str):
